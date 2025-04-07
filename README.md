@@ -3,7 +3,7 @@
 Bibliothéque en ligne libre de droit et français pour retrouver les femmes qui ont marqué les Jeux Olympiques d'été
 
 
-# Fichier
+# Fichiers
 
 |Fichier  |Descriptif |
 |--|--|
@@ -13,6 +13,6 @@ Bibliothéque en ligne libre de droit et français pour retrouver les femmes qui
 |**Site internet** | [Résultat final](https://les-sportives-de-legende1.odoo.com/parcourir-les-sportives) |
 
 # Contributeurs
-Baptiste Maze
-Mathieu Chesneau
-Marie Fournier
+- Baptiste Maze
+- Mathieu Chesneau
+- Marie Fournier
