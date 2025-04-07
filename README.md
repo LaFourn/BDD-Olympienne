@@ -11,3 +11,8 @@ Bibliothéque en ligne libre de droit et français pour retrouver les femmes qui
 |**Banque d'image** | [Fichier avec les images de sportive](https://github.com/LaFourn/BDD-Olympienne/tree/main/asset/image/image) |
 |**Code** | [Script pour la création de la base de données internet](https://github.com/LaFourn/BDD-Olympienne/blob/main/src/code%20bdd.txt) |
 |**Site internet** | [Résultat final](https://les-sportives-de-legende1.odoo.com/parcourir-les-sportives) |
+
+# Contributeurs
+Mathieu Chesneau 
+Baptiste Maze
+Marie Fournier
