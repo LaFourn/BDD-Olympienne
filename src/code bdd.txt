@@ -1,0 +1,666 @@
+<meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cartes d'Athlètes</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0; /* Reset default margin to 0 */
+            padding: 0; /* Reset default padding to 0 */
+        }
+
+        /* Sticky header styles */
+        #sticky-header {
+            position: sticky;
+            top: 0;
+            background-color: white;
+            z-index: 1000;
+            padding: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .filter-menu {
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .filter-menu label {
+            margin-right: 10px;
+        }
+
+        .filter-menu select {
+            margin-right: 20px;
+            padding: 5px;
+            flex: 1; /* Make filters grow to fill available space */
+            max-width: 200px; /* Limit max width for better layout */
+        }
+
+        .search-bar {
+            margin-bottom: 20px;
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        .athlete-cards {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding: 10px; /* Add padding for spacing */
+            overflow-y: auto; /* Add scrollbar for overflow */
+            max-height: calc(100vh - 150px); /* Adjust max height as needed */
+        }
+
+        .athlete-card {
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            width: 200px;
+            margin: 10px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .athlete-card h3 {
+            margin: 0;
+            font-size: 18px; /* Adjust the font size as needed */
+        }
+
+        .athlete-card img {
+            width: 100%;
+            height: auto;
+            border-radius: 5px;
+        }
+
+        .athlete-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .detail-panel {
+            display: none;
+            position: fixed;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 900px;
+            height: calc(75%);
+            background-color: white;
+            border-radius: 15px;
+            padding: 20px;
+            overflow-y: auto;
+            z-index: 1000;
+            transition: top 0.3s ease-out;
+        }
+
+        .detail-panel.open {
+            top: 60px;
+        }
+
+        .detail-panel .close-btn {
+            display: block;
+            width: 100%;
+            background: #f0f0f0;
+            padding: 10px 0;
+            text-align: center;
+            cursor: pointer;
+            border-bottom: 1px solid #ccc;
+            font-size: 20px;
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+        }
+
+        .detail-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .detail-content img {
+            width: 150px;
+            height: auto;
+            border-radius: 5px;
+            margin-left: 20px;
+        }
+
+        .detail-header {
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+
+        .detail-header h3 {
+            margin: 0;
+            flex-grow: 1;
+        }
+
+        .detail-body {
+            margin-top: 20px;
+            text-align: left;
+            width: 100%;
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 500;
+        }
+
+        .overlay.show {
+            display: block;
+        }
+    </style>
+
+
+
+
+    <header id="sticky-header">
+        <div class="search-bar">
+            <input type="text" id="search-bar" placeholder="Rechercher..." onkeyup="searchCards()">
+        </div>
+
+        <div class="filter-menu">
+            <label for="sport-filter">Sport:</label>
+            <select id="sport-filter" onchange="filterCards(); updateEventFilter()">
+                <option value="all">Tous</option>
+            </select>
+
+            <label for="event-filter" style="display:none;">Événement:</label>
+            <select id="event-filter" style="display:none;" onchange="filterCards()">
+                <option value="all">Tous</option>
+            </select>
+
+            <label for="nationality-filter">Nationalité:</label>
+            <select id="nationality-filter" onchange="filterCards()">
+                <option value="all">Toutes</option>
+            </select>
+
+            <label for="continent-filter">Continent:</label>
+            <select id="continent-filter" onchange="filterCards(); updateNationalityFilter()">
+                <option value="all">Tous</option>
+            </select>
+
+            <label for="year-filter">Année:</label>
+            <select id="year-filter" onchange="filterCards()">
+                <option value="all">Toutes</option>
+            </select>
+
+            <label for="genre-filter">Genre:</label>
+            <select id="genre-filter" onchange="filterCards()">
+                <option value="all">Tous</option>
+            </select>
+
+            <label for="feat-filter">Exploit:</label>
+            <select id="feat-filter" onchange="filterCards()">
+                <option value="all">Tous</option>
+            </select>
+        </div>
+    </header>
+
+    <main>
+        <div class="athlete-cards" id="athlete-cards"></div>
+    </main>
+
+    <div class="overlay" id="overlay" onclick="closeDetailPanel()"></div>
+
+    <div class="detail-panel" id="detail-panel">
+        <div class="close-btn" onclick="closeDetailPanel()">▼ Fermer</div>
+        <div class="detail-content">
+            <div class="detail-header">
+                <h3 id="detail-name"></h3>
+                <img src="" alt="Image de l'athlète" id="detail-image" loading="lazy">
+            </div>
+            <div class="detail-body">
+                <p id="detail-sport"></p>
+                <p id="detail-nationality"></p>
+                <p id="detail-continent"></p>
+                <p id="detail-year"></p>
+                <p id="detail-event"></p>
+                <p id="detail-feat"></p>
+                <p id="detail-info"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const csvUrl = 'https://mathieuc3502.github.io/images_les_sportives_de_legende/data/data.csv';
+            fetch(csvUrl)
+                .then(response => response.text())
+                .then(data => {
+                    const athletes = parseCSV(data);
+                    populateFilterOptions(athletes);
+                    generateCards(athletes);
+                });
+        });
+
+        function parseCSV(data) {
+            // Join lines into a single string, then split based on the header line
+            const [headerLine, ...lines] = data.split('\n');
+            const headers = headerLine.split(',');
+
+            // Join all lines into a single string for easier processing
+            const allData = lines.join('\n');
+
+            // Regular expression to match CSV fields, including multiline quoted fields
+            const regex = /("([^"]*(?:""[^"]*)*)",?|([^,\n]+),?|,)/g;
+
+            let matches;
+            const athletes = [];
+            let currentAthlete = [];
+            let currentField = '';
+            let inQuotes = false;
+
+            for (let i = 0; i < allData.length; i++) {
+                const char = allData[i];
+
+                if (char === '"' && (i === 0 || allData[i - 1] !== '\\')) {
+                    inQuotes = !inQuotes;
+                    currentField += char;
+                } else if (char === ',' && !inQuotes) {
+                    currentAthlete.push(currentField.trim());
+                    currentField = '';
+                } else if (char === '\n' && !inQuotes) {
+                    currentAthlete.push(currentField.trim());
+                    athletes.push(currentAthlete);
+                    currentAthlete = [];
+                    currentField = '';
+                } else {
+                    currentField += char;
+                }
+            }
+
+            // Add the last field and athlete if there is any remaining data
+            if (currentField) {
+                currentAthlete.push(currentField.trim());
+            }
+            if (currentAthlete.length > 0) {
+                athletes.push(currentAthlete);
+            }
+
+            // Map the parsed data into objects using headers
+            const result = athletes.map(values => {
+                const athlete = {};
+                headers.forEach((header, index) => {
+                    if (values[index] && values[index].includes(';')) {
+                        athlete[header.trim()] = values[index].split(';').map(value => value.trim());
+                    } else {
+                        athlete[header.trim()] = values[index] ? values[index].trim() : '';
+                    }
+                });
+                return athlete;
+            });
+
+            return result;
+        }
+
+        function populateFilterOptions(athletes) {
+            const sportFilter = document.getElementById('sport-filter');
+            const nationalityFilter = document.getElementById('nationality-filter');
+            const continentFilter = document.getElementById('continent-filter');
+            const yearFilter = document.getElementById('year-filter');
+            const genreFilter = document.getElementById('genre-filter');
+            const featFilter = document.getElementById('feat-filter');
+
+            const sports = new Set();
+            const nationalities = new Set();
+            const continents = new Set();
+            const years = new Set();
+            const genres = new Set();
+            const feats = new Set();
+
+            athletes.forEach(athlete => {
+                if (Array.isArray(athlete.sport)) {
+                    athlete.sport.forEach(sport => sports.add(sport.trim()));
+                } else {
+                    sports.add(athlete.sport.trim());
+                }
+
+                if (Array.isArray(athlete.nationality)) {
+                    athlete.nationality.forEach(nat => nationalities.add(nat.trim()));
+                } else {
+                    nationalities.add(athlete.nationality.trim());
+                }
+
+                if (Array.isArray(athlete.continent)) {
+                    athlete.continent.forEach(cont => continents.add(cont.trim()));
+                } else {
+                    continents.add(athlete.continent.trim());
+                }
+
+                if (Array.isArray(athlete.year)) {
+                    athlete.year.forEach(yr => years.add(yr.trim()));
+                } else {
+                    years.add(athlete.year.trim());
+                }
+
+                if (Array.isArray(athlete.genre)) {
+                    athlete.genre.forEach(gen => genres.add(gen.trim()));
+                } else {
+                    genres.add(athlete.genre.trim());
+                }
+
+                if (Array.isArray(athlete.feat)) {
+                    athlete.feat.forEach(ft => feats.add(ft.trim()));
+                } else {
+                    feats.add(athlete.feat.trim());
+                }
+            });
+
+            addOptionsToFilter(sports, sportFilter);
+            addOptionsToFilter(nationalities, nationalityFilter);
+            addOptionsToFilter(continents, continentFilter);
+            addOptionsToFilter(years, yearFilter);
+            addOptionsToFilter(genres, genreFilter);
+            addOptionsToFilter(feats, featFilter);
+        }
+
+        function addOptionsToFilter(options, filter) {
+            options.forEach(option => {
+                const optionElement = document.createElement('option');
+                optionElement.value = option;
+                optionElement.textContent = option;
+                filter.appendChild(optionElement);
+            });
+        }
+
+        function generateCards(athletes) {
+            // Trier les athlètes par nom
+            athletes.sort((a, b) => a.name.localeCompare(b.name));
+        
+            // Obtenir le conteneur des cartes d'athlètes
+            const container = document.getElementById('athlete-cards');
+            container.innerHTML = '';
+        
+            // Parcourir chaque athlète
+            athletes.forEach(athlete => {
+                // Vérifier si le nom de l'athlète n'est pas vide
+                if (!athlete.name.trim()) {
+                    return; // Passer à l'athlète suivant
+                }
+        
+                // Créer une nouvelle carte d'athlète
+                const card = document.createElement('div');
+                card.className = 'athlete-card';
+                card.setAttribute('data-name', athlete.name);
+                card.setAttribute('data-sport', athlete.sport);
+                card.setAttribute('data-nationality', athlete.nationality);
+                card.setAttribute('data-continent', athlete.continent);
+                card.setAttribute('data-year', athlete.year);
+                card.setAttribute('data-event', athlete.event);
+                card.setAttribute('data-feat', athlete.feat);
+                card.setAttribute('data-genre', athlete.genre);
+                card.setAttribute('data-image_name', athlete.image_name);
+                card.setAttribute('data-info', athlete.info);
+        
+                // Définir le contenu HTML de la carte
+                card.innerHTML = `
+                    <img src="https://mathieuc3502.github.io/images_les_sportives_de_legende/data/images/${athlete.image_name}" alt="${athlete.name}">
+                    <h3>${athlete.name}</h3>
+                    <p><b><u>Sport:</u></b> ${athlete.sport}</p>
+                    <p><b><u>Nationalité:</u></b> ${athlete.nationality}</p>
+                `;
+        
+                // Ajouter un gestionnaire d'événement pour afficher le panneau de détail
+                card.addEventListener('click', () => showDetailPanel(athlete));
+        
+                // Ajouter la carte au conteneur
+                container.appendChild(card);
+            });
+        
+            // Appliquer le filtrage initial
+            filterCards();
+        
+            // Mettre à jour tous les filtres
+            updateAllFilters();
+        }
+
+        function filterCards() {
+            const sportFilter = document.getElementById('sport-filter').value;
+            const eventFilter = document.getElementById('event-filter').value;
+            const nationalityFilter = document.getElementById('nationality-filter').value;
+            const continentFilter = document.getElementById('continent-filter').value;
+            const yearFilter = document.getElementById('year-filter').value;
+            const genreFilter = document.getElementById('genre-filter').value;
+            const featFilter = document.getElementById('feat-filter').value;
+            const cards = document.querySelectorAll('.athlete-card');
+
+            cards.forEach(card => {
+                const sport = card.getAttribute('data-sport').split(',');
+                const event = card.getAttribute('data-event').split(',');
+                const nationality = card.getAttribute('data-nationality').split(',');
+                const continent = card.getAttribute('data-continent').split(',');
+                const year = card.getAttribute('data-year').split(',');
+                const genre = card.getAttribute('data-genre').split(',');
+                const feat = card.getAttribute('data-feat').split(',');
+
+                const sportMatch = (sportFilter === 'all' || sport.includes(sportFilter));
+                const eventMatch = (eventFilter === 'all' || event.includes(eventFilter));
+                const nationalityMatch = (nationalityFilter === 'all' || nationality.includes(nationalityFilter));
+                const continentMatch = (continentFilter === 'all' || continent.includes(continentFilter));
+                const yearMatch = (yearFilter === 'all' || year.includes(yearFilter));
+                const genreMatch = (genreFilter === 'all' || genre.includes(genreFilter));
+                const featMatch = (featFilter === 'all' || feat.includes(featFilter));
+
+                if (sportMatch && eventMatch && nationalityMatch && continentMatch && yearMatch && genreMatch && featMatch) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        function searchCards() {
+            const searchInput = document.getElementById('search-bar').value.toLowerCase();
+            const cards = document.querySelectorAll('.athlete-card');
+
+            cards.forEach(card => {
+                const name = card.getAttribute('data-name').toLowerCase();
+                const sport = card.getAttribute('data-sport').toLowerCase().split(',');
+                const nationality = card.getAttribute('data-nationality').toLowerCase().split(',');
+                const continent = card.getAttribute('data-continent').toLowerCase().split(',');
+                const year = card.getAttribute('data-year').toLowerCase().split(',');
+                const event = card.getAttribute('data-event').toLowerCase().split(',');
+                const feat = card.getAttribute('data-feat').toLowerCase().split(',');
+                const genre = card.getAttribute('data-genre').toLowerCase().split(',');
+                const image_name = card.getAttribute('data-image_name').toLowerCase();
+
+                const sportMatch = sport.some(s => s.includes(searchInput));
+                const nationalityMatch = nationality.some(n => n.includes(searchInput));
+                const continentMatch = continent.some(c => c.includes(searchInput));
+                const yearMatch = year.some(y => y.includes(searchInput));
+                const eventMatch = event.some(e => e.includes(searchInput));
+                const featMatch = feat.some(f => f.includes(searchInput));
+                const genreMatch = genre.some(g => g.includes(searchInput));
+
+                if (name.includes(searchInput) || sportMatch || nationalityMatch || continentMatch || yearMatch || eventMatch || featMatch || genreMatch || image_name.includes(searchInput)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+
+        function updateEventFilter() {
+            const sportFilter = document.getElementById('sport-filter').value;
+            const eventFilterLabel = document.querySelector('label[for="event-filter"]');
+            const eventFilter = document.getElementById('event-filter');
+
+            if (sportFilter === 'all') {
+                eventFilter.style.display = 'none';
+                eventFilterLabel.style.display = 'none';
+                eventFilter.innerHTML = '<option value="all">Tous</option>';
+            } else {
+                const athletes = Array.from(document.querySelectorAll('.athlete-card'))
+                    .filter(card => card.getAttribute('data-sport').split(',').includes(sportFilter))
+                    .map(card => card.getAttribute('data-event').split(','))
+                    .flat();
+
+                const uniqueEvents = [...new Set(athletes)];
+
+                uniqueEvents.sort(); // Sort alphabetically
+
+                eventFilter.style.display = 'inline';
+                eventFilterLabel.style.display = 'inline';
+                eventFilter.innerHTML = '<option value="all">Tous</option>';
+                uniqueEvents.forEach(event => {
+                    const option = document.createElement('option');
+                    option.value = event;
+                    option.textContent = event;
+                    eventFilter.appendChild(option);
+                });
+            }
+            filterCards();
+        }
+
+        function updateYearFilter() {
+            const yearFilter = document.getElementById('year-filter');
+            const athletes = Array.from(document.querySelectorAll('.athlete-card'))
+                .map(card => card.getAttribute('data-year').split(','))
+                .flat();
+
+            const uniqueYears = [...new Set(athletes)];
+
+            uniqueYears.sort((a, b) => b - a); // Sort numerically, highest to lowest
+
+            yearFilter.innerHTML = '<option value="all">Toutes</option>';
+            uniqueYears.forEach(year => {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearFilter.appendChild(option);
+            });
+        }
+
+        function populateFilterOptionsForAttribute(attribute, filterElement, sortType = 'alphabetical') {
+            const athletes = Array.from(document.querySelectorAll('.athlete-card'))
+                .map(card => card.getAttribute(`data-${attribute}`))
+                .flatMap(value => value.split(','));
+
+            const uniqueValues = [...new Set(athletes)];
+
+            // Sort the unique values
+            if (sortType === 'numerical') {
+                uniqueValues.sort((a, b) => b - a); // Sort numerically, highest to lowest
+            } else {
+                uniqueValues.sort(); // Sort alphabetically
+            }
+
+            uniqueValues.forEach(value => {
+                const option = document.createElement('option');
+                option.value = value;
+                option.textContent = value;
+                filterElement.appendChild(option);
+            });
+        }
+
+        function updateNationalityFilter() {
+            const continentFilter = document.getElementById('continent-filter').value;
+            const nationalityFilter = document.getElementById('nationality-filter');
+
+            if (continentFilter === 'all') {
+                nationalityFilter.innerHTML = '<option value="all">Toutes</option>';
+                populateFilterOptionsForAttribute('nationality', nationalityFilter);
+            } else {
+                const athletes = Array.from(document.querySelectorAll('.athlete-card'))
+                    .filter(card => card.getAttribute('data-continent').split(',').includes(continentFilter))
+                    .map(card => card.getAttribute('data-nationality').split(','))
+                    .flat();
+
+                const uniqueNationalities = [...new Set(athletes)];
+
+                uniqueNationalities.sort(); // Sort alphabetically
+
+                nationalityFilter.innerHTML = '<option value="all">Toutes</option>';
+                uniqueNationalities.forEach(nationality => {
+                    const option = document.createElement('option');
+                    option.value = nationality;
+                    option.textContent = nationality;
+                    nationalityFilter.appendChild(option);
+                });
+            }
+            filterCards();
+        }
+
+        function updateSportFilter() {
+            const sportFilter = document.getElementById('sport-filter');
+            sportFilter.innerHTML = '<option value="all">Tous</option>';
+
+            populateFilterOptionsForAttribute('sport', sportFilter);
+            filterCards();
+        }
+
+        function updateFeatFilter() {
+            const featFilter = document.getElementById('feat-filter');
+            featFilter.innerHTML = '<option value="all">Tous</option>';
+
+            populateFilterOptionsForAttribute('feat', featFilter);
+            filterCards();
+        }
+
+        function updateContinentsFilter() {
+            const continentFilter = document.getElementById('continent-filter');
+            continentFilter.innerHTML = '<option value="all">Tous</option>';
+
+            populateFilterOptionsForAttribute('continent', continentFilter);
+            filterCards();
+        }
+
+        function showDetailPanel(athlete) {
+            const detailImage = document.getElementById('detail-image');
+            detailImage.src = `https://mathieuc3502.github.io/images_les_sportives_de_legende/data/images/${athlete.image_name}`;
+            detailImage.alt = `${athlete.name}`;
+
+            document.getElementById('detail-name').textContent = athlete.name;
+            document.getElementById('detail-sport').innerHTML = `<b><u>Sport :</u></b> ${athlete.sport}`;
+            document.getElementById('detail-nationality').innerHTML = `<b><u>Nationalité :</u></b> ${athlete.nationality}`;
+            document.getElementById('detail-continent').innerHTML = `<b><u>Continent :</u></b> ${athlete.continent}`;
+            document.getElementById('detail-year').innerHTML = `<b><u>Année :</u></b> ${athlete.year}`;
+            document.getElementById('detail-event').innerHTML = `<b><u>Événement :</u></b> ${athlete.event}`;
+            document.getElementById('detail-feat').innerHTML = `<b><u>Exploit :</u></b> ${athlete.feat}`;
+
+            // Adding separator and title for the info section
+            const detailInfo = document.getElementById('detail-info');
+            detailInfo.innerHTML = `
+                <hr>
+                <h4>Informations Complémentaires :</h4>
+                ${athlete.info ? athlete.info : 'Pas d\'informations disponibles'}
+            `;
+
+
+            const detailPanel = document.getElementById('detail-panel');
+            detailPanel.style.display = 'block';
+            detailPanel.classList.add('open');
+            document.getElementById('overlay').classList.add('show');
+        }
+
+        function closeDetailPanel() {
+            const detailPanel = document.getElementById('detail-panel');
+            detailPanel.classList.remove('open');
+            document.getElementById('overlay').classList.remove('show');
+            setTimeout(() => {
+                detailPanel.style.display = 'none';
+            }, 300);
+        }
+
+    function updateAllFilters() {
+        updateEventFilter();
+        updateYearFilter();
+        updateSportFilter();
+        updateFeatFilter();
+        updateContinentsFilter();
+        updateNationalityFilter();
+    }
+
+    </script>
