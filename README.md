@@ -13,6 +13,6 @@ Bibliothéque en ligne libre de droit et français pour retrouver les femmes qui
 |**Site internet** | [Résultat final](https://les-sportives-de-legende1.odoo.com/parcourir-les-sportives) |
 
 # Contributeurs
-Mathieu Chesneau 
 Baptiste Maze
+Mathieu Chesneau
 Marie Fournier
